@@ -1,0 +1,26 @@
+\documentclass{ctexart}
+	\usepackage{enumerate}
+\begin{document}
+\title{%
+	Annotated STL sources\\
+		侯捷
+}
+\author{%
+	cxgAlleria
+}
+\maketitle
+
+\tableofcontents
+\section[0305]{2016/03/05}
+	\begin{enumerate}[I.]
+		\item \~ p35 several interesting contants. Remember that 1.class template arguemnt can be non-type; 2. class template partial specialization.
+		\item \~ p42 4 funny properties. 1. unnamed objects 2. const class variables can be initializer within class declaration 3. beware of prefix/postfix in(de)crement operators and dereference operator 4. functors
+	\end{enumerate}
+	
+\section[0306]{2016/03/06}
+	\begin{enumerate}[I.]
+		\item "new\_handler" is a function pointer which points to a no-arg and return-void function defined in header "new". When there is no enough space, the "new\_handler" pointing function will be invoked. Function "set\_new\_handler" defined in header "new" is to alter the pointer.
+		\item operator new has 3 types, plain new which will throw std::bad::alloc, nothrow new which will return NULL when failure occurs and placement newi which is to fill but noit allocate. 
+		\item size\_t and ptrdiff\_t are both defined in header "cstddef", the former is usually used to specify the length, index within a array while the latter is used to calculate the difference betwwen two pointers. 
+	\end{enumerate}
+\end{document}
