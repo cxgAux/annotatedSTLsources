@@ -249,19 +249,78 @@ namespace cxg {
 	}
 
 	template < class RandomAccessIterator, class Comp = std::less<typename RandomAccessIterator::value_type> >
+	RandomAccessIterator unguarded_partition (RandomAccessIterator _first, RandomAccessIterator _last, Comp _comp = Comp()) {
+		_log("partition")
+		RandomAccessIterator __i = _first;
+		typename RandomAccessIterator::value_type __guard(* __i);
+		while(true) {
+			while(_comp(* ++ __i, __guard));//compared with partition, there is no nned to perform bound checking
+			while(! _comp(* -- _last, __guard));
+			if(__i >= _last) {
+				break;
+			}
+			iter_swap(__i, _last);
+		}
+		iter_swap(_first, _last);
+		return _last;
+	}
+
+	template < class RandomAccessIterator, class Comp = std::less<typename RandomAccessIterator::value_type> >
 	RandomAccessIterator random_partition (RandomAccessIterator _first, RandomAccessIterator _last, Comp _comp = Comp()) {
 		_log("random partition")
 		iter_swap(_first, _first + RandInt(0, _last - _first));
 		return partition(_first, _last, _comp);
 	}
 
+	template < class InputIterator, class Comp = std::less<typename InputIterator::value_type> >
+	InputIterator medianOfThree(InputIterator _first, InputIterator _second, InputIterator _third, Comp _comp = Comp()) {
+		if(_comp(* _first, * _second)) {//f s
+			if(_comp(* _first, * _third)) {
+				if(_comp(* _second, * _third)) {
+					return _second;// f s t
+				}
+				else {
+					return _third;//f t s
+				}
+			}
+			else {
+				return _first;//t f s
+			}
+		}
+		else {//s f
+			if(_comp(* _first, * _third)) {// s f t
+				return _first;
+			}
+			else {
+				if(_comp(* _second, * _third)) { // s t f
+					return _third;
+				}
+				else {
+					return _second;// t s f
+				}
+			}
+		}
+	}
+
+	template < class RandomAccessIterator, class Comp = std::less<typename RandomAccessIterator::value_type> >
+	RandomAccessIterator median_of_three_partition (RandomAccessIterator _first, RandomAccessIterator _last, Comp _comp = Comp()) {
+		_log("median of three partition")
+		iter_swap(_first, medianOfThree(_first, _first + (_last - _first) / 2, _last - 1));
+		return unguarded_partition(_first, _last, _comp);
+	}
+
 	template < class RandomAccessIterator, class Comp = std::less<typename RandomAccessIterator::value_type> >
 	void quick_sort (RandomAccessIterator _first, RandomAccessIterator _last, Comp _comp = Comp()) {
 		_log("quick sort")
-		if(_last - _first > 1) {
-			RandomAccessIterator __delimiter = random_partition(_first, _last, _comp);
+		if(_last - _first > 2) {
+			RandomAccessIterator __delimiter = median_of_three_partition(_first, _last, _comp);
 			quick_sort(_first, __delimiter, _comp);
 			quick_sort(++ __delimiter, _last, _comp);
+		}
+		else if (_last - _first == 2){
+			if (! _comp(* _first, * (_first + 1))) {
+				iter_swap(_first, _first + 1);
+			}
 		}
 	}
 
@@ -338,7 +397,7 @@ namespace cxg {
 		sort_heap(_first, _middle, _comp);
 	}
 
-	
+
 }
 
 #endif // _FUNDATIONAL_HPP_
