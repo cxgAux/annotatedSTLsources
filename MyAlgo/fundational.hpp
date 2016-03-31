@@ -4,12 +4,14 @@
 #include <iterator>
 #include <chrono>
 #include <random>
+#include <memory.h>
 #ifdef DEBUG
 	#include <iostream>
 #endif
+#include <type_traits>
 
 #if defined(DEBUG)
-	#define _log(x) std::cout << (x) << std::endl;
+	#define _log(x) std::cout << "LOG >> " << (x) << std::endl;
 #else
 	#define _log(x)
 #endif
@@ -25,6 +27,30 @@ namespace cxg {
 	typename InputIterator::iterator_category iterator_category(InputIterator) {
 		typename InputIterator::iterator_category __tag;
 		return __tag;
+	}
+
+	template < class InputIterator, class OutputIterator >
+	OutputIterator _copy (InputIterator _first, InputIterator _last, OutputIterator _result, std::input_iterator_tag) {
+		_log("_copy<InputIterator>")
+		for(; _first != _last;) {
+			* (_result ++) = * (_first ++);
+		}
+		return _result;
+	}
+
+	template < class RandomAccessIterator, class OutputIterator >
+	OutputIterator _copy (RandomAccessIterator _first, RandomAccessIterator _last, OutputIterator _result, std::random_access_iterator_tag) {
+		_log("\t_copy<RandomAccessIterator>")
+		for(typename RandomAccessIterator::difference_type __diff = _last - _first; __diff > 0; -- __diff) {
+			* (_result ++) = * (_first ++);
+		}
+		return _result;
+	}
+
+	template < class InputIterator, class OutputIterator>
+	OutputIterator copy (InputIterator _first, InputIterator _last, OutputIterator _result) {
+		_log("copy")
+		return _copy(_first, _last, _result, iterator_category(_first));
 	}
 
 	template < class T >
@@ -397,7 +423,90 @@ namespace cxg {
 		sort_heap(_first, _middle, _comp);
 	}
 
+	template < class ForwardIterator, class OutputIterator, class Comp = std::less<typename ForwardIterator::value_type> >
+	OutputIterator merge(ForwardIterator _first_f, ForwardIterator _last_f,  ForwardIterator _first_s, ForwardIterator _last_s, OutputIterator _result, Comp _comp = Comp()) {
+		_log("merge")
+		while(_first_f != _last_f && _first_s != _last_s) {
+			if(_comp(*(_first_f), *(_first_s))) {
+				* _result = * _first_f;
+				_result ++;
+				_first_f ++;
+			}
+			else {
+				*(_result ++) = * (_first_s ++);
+			}
+		}
+		return cxg::copy(_first_f, _last_f, cxg::copy(_first_s, _last_s, _result));
+	}
 
+	template < class BidirectionalIterator, class OutputIterator, class Comp = std::less<typename BidirectionalIterator::value_type> >
+	OutputIterator merge_backward(BidirectionalIterator _first_f, BidirectionalIterator _last_f,  BidirectionalIterator _first_s, BidirectionalIterator _last_s, OutputIterator _result, Comp _comp = Comp()) {
+		_log("merge backward")
+		OutputIterator __originRes = _result, __finalRes;
+		typename BidirectionalIterator::difference_type __diff_f = std::distance(_first_f, _last_f),
+			__diff_s = std::distance(_first_s, _last_s);
+		std::advance(_result, __diff_f + __diff_s);
+		__finalRes = _result --;
+		_last_f --;
+		_last_s --;
+		while(__diff_f > 0 && __diff_s > 0) {
+			if(_comp(*(_last_f), *(_last_s))) {
+				*(_result --) = * (_last_s --);
+				__diff_s --;
+			}
+			else {
+				*(_result --) = * (_last_f --);
+				__diff_f --;
+			}
+		}
+		if(__diff_f == 0) {
+			cxg::copy(_first_s, ++ _last_s, __originRes);
+		}
+		else
+			cxg::copy(_first_f, ++ _last_f, __originRes);
+		return __finalRes;
+	}
+
+	template < class BidirectionalIterator, class Comp = std::less<typename BidirectionalIterator::value_type> >
+	void _rotate_merge(BidirectionalIterator _first, BidirectionalIterator _middle, BidirectionalIterator _last, Comp _comp = Comp()) {
+		_log("rotate merge")
+		while(_first != _middle && _middle != _last) {
+			if(! _comp(* _middle, * _first)) {
+				_first ++;
+			}
+			else {
+				reverse(_first ++, ++ _middle);
+				reverse(_first, _middle);
+			}
+		}
+	}
+
+	template < class BidirectionalIterator, class Comp = std::less<typename BidirectionalIterator::value_type> >
+	void _inplace_merge(BidirectionalIterator _first, BidirectionalIterator _middle, BidirectionalIterator _last, BidirectionalIterator _buffer_first, BidirectionalIterator _buffer_last, Comp comp = Comp()) {
+		_log("_inplace_merge")
+		typename BidirectionalIterator::difference_type __len_f = std::distance(_first, _middle),
+			__len_s = std::distance( _middle, _last), __len_b = std::distance(_buffer_first, _buffer_last);
+		if(__len_b == 0) {
+			_rotate_merge(_first, _middle, _last, comp);
+		}
+		else if(__len_b >= __len_f) {
+			cxg::merge(_middle, _last, _buffer_first, cxg::copy(_first, _middle, _buffer_first), _first, comp);
+		}
+		else if(__len_b >= __len_s) {
+			cxg::merge_backward(_first, _middle, _buffer_first, cxg::copy(_middle, _last, _buffer_first), _first, comp);
+		}
+		else {
+			//different with sgi stl
+			_rotate_merge(_first, _middle, _last, comp);
+		}
+	}
+
+	template < class BidirectionalIterator, class Comp = std::less<typename BidirectionalIterator::value_type> >
+	void inplace_merge(BidirectionalIterator _first, BidirectionalIterator _middle, BidirectionalIterator _last, Comp comp = Comp()) {
+		_log("inplace merge")
+		typename BidirectionalIterator::difference_type __len = std::distance(_first, _last);
+
+	}
 }
 
 #endif // _FUNDATIONAL_HPP_
